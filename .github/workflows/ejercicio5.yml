@@ -1,0 +1,62 @@
+name: Ejercicio 5
+
+on: push
+
+env:
+  APP_NAME: "Quiz App"
+  VERSION: "1.0.0"
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      timestamp: ${{ steps.create-timestamp.outputs.timestamp }}
+
+    steps:
+      - name: Mostrar variables globales
+        run: |
+          echo "App: $APP_NAME"
+          echo "Versión: $VERSION"
+
+      - id: create-timestamp
+        name: Crear timestamp
+        run: echo "timestamp=$(date +%s)" >> $GITHUB_OUTPUT
+
+  test:
+    needs: setup
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - run: npm install
+
+      - run: npm test
+
+      - name: Mostrar timestamp del setup
+        run: |
+          echo "Timestamp previo: ${{ needs.setup.outputs.timestamp }}"
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    # Para pruebas, eliminamos condicional temporalmente
+    # when ready, usa: if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Desplegar aplicación
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          echo "Desplegando $APP_NAME v$VERSION"
+          if [ -z "$API_KEY" ]; then
+            echo "Secret NO está disponible"
+            exit 1
+          else
+            echo "Secret configurada correctamente"
+          fi
